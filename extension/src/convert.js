@@ -44,37 +44,57 @@
       v.playsInline = true;
       v.preload = "auto";
       const url = URL.createObjectURL(file);
-      const timer = setTimeout(() => reject(new Error("Tiempo agotado cargando el video")), 30000);
-      v.onloadeddata = async () => {
+      let settled = false;
+      const cleanupOnFailure = () => {
+        v.pause();
+        v.removeAttribute("src");
+        v.load();
+        URL.revokeObjectURL(url);
+      };
+      const fail = (error) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
-        // Algunos videos recortados conservan marcas de tiempo que no empiezan en 0
-        // (p. ej. empiezan en 130 s). Chrome se posiciona en el primer cuadro: ese es el desfase.
-        v._waasOffset = Number.isFinite(v.currentTime) ? v.currentTime : 0;
-        if (v.readyState < 4) {
-          await new Promise((r) => { const t = setTimeout(r, 5000); v.addEventListener("canplaythrough", () => { clearTimeout(t); r(); }, { once: true }); });
+        cleanupOnFailure();
+        reject(error);
+      };
+      const timer = setTimeout(() => fail(new Error("Tiempo agotado cargando el video")), 30000);
+      v.onloadeddata = async () => {
+        if (settled) return;
+        try {
+          // Algunos videos recortados conservan marcas de tiempo que no empiezan en 0
+          // (p. ej. empiezan en 130 s). Chrome se posiciona en el primer cuadro: ese es el desfase.
+          v._waasOffset = Number.isFinite(v.currentTime) ? v.currentTime : 0;
+          if (v.readyState < 4) {
+            await new Promise((r) => { const t = setTimeout(r, 5000); v.addEventListener("canplaythrough", () => { clearTimeout(t); r(); }, { once: true }); });
+          }
+          // Chrome solo corrige la duración cuando llega al final del archivo: se salta al final
+          // mientras la duración siga creciendo, y luego se vuelve al inicio.
+          const seekWait = (t) => new Promise((r) => {
+            const to = setTimeout(r, 3000);
+            v.addEventListener("seeked", () => { clearTimeout(to); r(); }, { once: true });
+            v.currentTime = t;
+          });
+          const initialDuration = v.duration;
+          for (let i = 0; i < 8 && Number.isFinite(v.duration); i++) {
+            const d = v.duration;
+            await seekWait(Math.max(0, d - 0.01));
+            await sleep(40);
+            if (!(v.duration > d + 0.01)) break;
+          }
+          await seekWait(v._waasOffset);
+          if (settled) return;
+          if (v.duration !== initialDuration) log("info", "video:duracion-corregida", { inicial: initialDuration, final: v.duration, desfase: v._waasOffset });
+          settled = true;
+          clearTimeout(timer);
+          resolve(v);
+        } catch (e) {
+          fail(e instanceof Error ? e : new Error(String(e)));
         }
-        // Chrome solo corrige la duración cuando llega al final del archivo: se salta al final
-        // mientras la duración siga creciendo, y luego se vuelve al inicio.
-        const seekWait = (t) => new Promise((r) => {
-          const to = setTimeout(r, 3000);
-          v.addEventListener("seeked", () => { clearTimeout(to); r(); }, { once: true });
-          v.currentTime = t;
-        });
-        const initialDuration = v.duration;
-        for (let i = 0; i < 8 && Number.isFinite(v.duration); i++) {
-          const d = v.duration;
-          await seekWait(Math.max(0, d - 0.01));
-          await sleep(40);
-          if (!(v.duration > d + 0.01)) break;
-        }
-        await seekWait(v._waasOffset);
-        if (v.duration !== initialDuration) log("info", "video:duracion-corregida", { inicial: initialDuration, final: v.duration, desfase: v._waasOffset });
-        resolve(v);
       };
       v.onerror = () => {
-        clearTimeout(timer);
         const e = v.error;
-        reject(new Error("El navegador no pudo leer el video" + (e ? ` (código ${e.code}: ${e.message || "formato no soportado"})` : "")));
+        fail(new Error("El navegador no pudo leer el video" + (e ? ` (código ${e.code}: ${e.message || "formato no soportado"})` : "")));
       };
       v.src = url;
       v._waasUrl = url;
