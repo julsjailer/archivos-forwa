@@ -25,7 +25,7 @@
   .act { border-radius:12px;padding:10px 16px;background:linear-gradient(135deg,#00b894,#087f69);box-shadow:0 4px 12px rgba(0,168,132,.18);transition:transform .15s,box-shadow .15s; } .act:hover:not(:disabled) { transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,168,132,.28); }
   .sec { border-radius:10px;padding:7px 11px;transition:border-color .15s,background .15s; } .sec:hover:not(:disabled) { border-color:var(--accent);background:rgba(0,168,132,.07); }
   input[type=text],input[type=number],select { border-radius:9px;padding:7px 9px; } video { max-height:300px;border-radius:13px;box-shadow:0 4px 14px rgba(0,0,0,.12); } .thumb { border-radius:13px;border:1px solid var(--line); }
-  .track { border-radius:10px; } .track .sel { border-radius:7px; } .track .handle { border-radius:6px;box-shadow:0 2px 8px rgba(0,168,132,.28); } .summary { border:1px solid var(--line);border-radius:12px;padding:10px 12px; }
+  .crop-editor { margin:8px 0;max-width:340px; } .crop-square { width:min(100%,280px);aspect-ratio:1;position:relative;overflow:hidden;border-radius:14px;background:#101820;border:1px solid var(--line);touch-action:none;cursor:grab; } .crop-square:active { cursor:grabbing; } .crop-square img,.crop-square video { position:absolute;width:100%;height:100%;object-fit:cover;max-height:none;border-radius:0;box-shadow:none;user-select:none;pointer-events:none; } .crop-controls { display:grid;grid-template-columns:1fr;gap:5px;margin-top:8px; } .crop-controls label { display:grid;grid-template-columns:70px 1fr 38px;gap:7px;align-items:center;font-size:12px;color:var(--muted); } .crop-controls input { width:100%;min-width:0; } .crop-reset { margin-top:6px; }\n  .track { border-radius:10px; } .track .sel { border-radius:7px; } .track .handle { border-radius:6px;box-shadow:0 2px 8px rgba(0,168,132,.28); } .summary { border:1px solid var(--line);border-radius:12px;padding:10px 12px; }
   .bar { height:8px;border-radius:5px; } .bar > div { background:linear-gradient(90deg,#00b894,#35d6b1);border-radius:5px; } .result { background:var(--card);border-radius:13px;padding:12px; }
   @media(max-width:560px) { .overlay { padding:5px;align-items:flex-start; } .panel { width:100%;max-height:96vh;border-radius:17px;padding:13px 12px 14px; } header h2 { font-size:18px; } .brandmark { width:38px;height:38px;border-radius:12px;font-size:19px; } .tabs { gap:3px;padding:4px; } .tabs button { font-size:12px;padding:9px 5px; } section { padding:12px; } .trim { grid-template-columns:1fr;gap:4px; } }
   * { box-sizing: border-box; font-family: system-ui, "Segoe UI", Roboto, sans-serif; }
@@ -376,6 +376,34 @@
     const section = (n, title, ...body) => h("section", { class: "off" }, h("h3", null, h("span", { class: "n" }, String(n)), title), ...body);
 
     // Selector de archivo: botón + texto de estado.
+    // Editor de encuadre cuadrado compartido por imagen, video y GIF.
+    function makeCropEditor() {
+      const box = h("div", { class: "crop-editor" }), square = h("div", { class: "crop-square" });
+      let media = null, url = null, kind = "image";
+      const state = { zoom: 1, x: 0, y: 0 };
+      function slider(label, min, max, step, key, suffix) {
+        const input = h("input", { type: "range", min, max, step, value: state[key] }), val = h("span", { class: "muted", textContent: key === "zoom" ? "1.0×" : "0%" });
+        input.addEventListener("input", () => { state[key] = +input.value; val.textContent = key === "zoom" ? state.zoom.toFixed(1) + "×" : Math.round(state[key] * 100) + "%"; render(); });
+        return { row: h("label", null, h("span", null, label), input, val), input, val };
+      }
+      const zoom = slider("Zoom", 1, 4, 0.1, "zoom"), horizontal = slider("Horizontal", -1, 1, 0.01, "x"), vertical = slider("Vertical", -1, 1, 0.01, "y");
+      function render() { if (media) { media.style.objectPosition = (50 + state.x * 50) + "% " + (50 + state.y * 50) + "%"; media.style.transform = "scale(" + state.zoom + ")"; } }
+      function setSource(file, mediaKind = "image") {
+        if (url) URL.revokeObjectURL(url);
+        url = URL.createObjectURL(file); kind = mediaKind;
+        if (media) { media.pause?.(); media.remove(); }
+        media = kind === "video" ? h("video", { muted: true, loop: true, autoplay: true, playsInline: true }) : h("img", { alt: "Vista previa del encuadre", draggable: false });
+        media.src = url; square.append(media); if (kind === "video") media.play().catch(() => {}); render();
+      }
+      function reset() { state.zoom=1;state.x=0;state.y=0;zoom.input.value="1";horizontal.input.value="0";vertical.input.value="0";zoom.val.textContent="1.0×";horizontal.val.textContent="0%";vertical.val.textContent="0%";render(); }
+      let drag = null;
+      square.addEventListener("pointerdown", e => { if (!media) return; drag={x:e.clientX,y:e.clientY,cx:state.x,cy:state.y}; square.setPointerCapture(e.pointerId); });
+      square.addEventListener("pointermove", e => { if (!drag) return; state.x=Math.max(-1,Math.min(1,drag.cx-(e.clientX-drag.x)*2/square.clientWidth));state.y=Math.max(-1,Math.min(1,drag.cy-(e.clientY-drag.y)*2/square.clientHeight));horizontal.input.value=String(state.x);vertical.input.value=String(state.y);horizontal.val.textContent=Math.round(state.x*100)+"%";vertical.val.textContent=Math.round(state.y*100)+"%";render(); });
+      square.addEventListener("pointerup",()=>drag=null);square.addEventListener("pointercancel",()=>drag=null);
+      box.append(h("div",{class:"muted"},"Encuadre 1:1 · arrastra la imagen para moverla"),square,h("div",{class:"crop-controls"},zoom.row,horizontal.row,vertical.row),h("button",{class:"sec crop-reset",textContent:"Restablecer encuadre",onclick:reset}));
+      return { el:box,setSource,reset,params:()=>({zoom:state.zoom,x:state.x,y:state.y}) };
+    }
+
     function makePicker(label, accept, hint) {
       const input = h("input", { type: "file", accept, style: "display:none" });
       const btn = h("button", { class: "act", textContent: label });
@@ -472,7 +500,7 @@
         if (!p) return null;
         const v = p.visual;
         const followsAudio = v.kind === "image" || p.fit !== "independiente";
-        return JSON.stringify([v.kind, fileId(v.file), v.start, v.dur, followsAudio ? p.fit : "", followsAudio ? +p.audio.dur.toFixed(3) : "", f.mode]);
+        return JSON.stringify([v.kind, fileId(v.file), v.start, v.dur, v.crop || null, followsAudio ? p.fit : "", followsAudio ? +p.audio.dur.toFixed(3) : "", f.mode]);
       };
       // Clave del resultado: todo lo que cambia el sticker o su audio (el paquete y el autor se aplican al enviar).
       const fullKey = () => {
@@ -766,11 +794,12 @@
     function videoForm() {
       const picker = makePicker("Elegir video…", "video/*,.mov,.mp4,.webm,.mkv", "Cualquier video con sonido.");
       const trimmer = makeTrimmer("video", "Arrastra las asas verdes: el video muestra el cuadro donde quedan. Haz clic o arrastra en la barra para mover el cursor.");
+      const crop = makeCropEditor();
       const s = { file: null };
       const changed = () => form.refresh();
       const fmt = makeFormat({
         getParams: () => (s.file && trimmer.loaded ? {
-          visual: { kind: "video", file: s.file, start: trimmer.start, dur: trimmer.len },
+          visual: { kind: "video", file: s.file, start: trimmer.start, dur: trimmer.len, crop: crop.params() },
           audio: { file: s.file, start: trimmer.start, dur: trimmer.len }, fit: "repetir",
         } : null),
       });
@@ -783,6 +812,7 @@
           try {
             const meta = await WAAS.probeVideo(f);
             s.file = f;
+            crop.setSource(f, "video");
             trimmer.load(f, meta);
             picker.info.textContent = `${f.name} · ${fmtT(meta.duration)} · ${meta.width}×${meta.height}`;
             log("info", "ui:video-elegido", { nombre: f.name, tipo: f.type, bytes: f.size, ...meta });
@@ -801,7 +831,7 @@
         desc: "Un video con su propio sonido: se recorta el tramo y la imagen y el audio van juntos.",
         sources: [
           { title: "Video", body: [picker.el], ready: () => !!s.file },
-          { title: "Tramo", body: [trimmer.el], ready: () => trimmer.loaded, enabled: () => trimmer.loaded },
+          { title: "Tramo", body: [trimmer.el, crop.el], ready: () => trimmer.loaded, enabled: () => trimmer.loaded },
         ],
         fmt, getBase: () => baseName(s.file), stop: () => trimmer.stop(),
       });
@@ -812,13 +842,14 @@
     function imageForm() {
       const picker = makePicker("Elegir imagen…", "image/*", "JPG, PNG, WebP… (una foto, un dibujo, un meme).");
       const thumb = h("img", { class: "thumb", alt: "imagen elegida", style: "display:none" });
+      const crop = makeCropEditor();
       const animNote = h("div", { class: "note", style: "display:none" }, "Es una imagen animada: aquí solo se usa su primer cuadro. Para que se mueva, usa la pestaña «Video o GIF + audio».");
       const s = { file: null, url: null };
       const changed = () => form.refresh();
       const audio = makeAudioSource(changed);
       const fmt = makeFormat({
         grid: false, sync: false, still: true,
-        getParams: () => (s.file && audio.ready ? { visual: { kind: "image", file: s.file }, audio: audio.params, fit: "repetir" } : null),
+        getParams: () => (s.file && audio.ready ? { visual: { kind: "image", file: s.file, crop: crop.params() }, audio: audio.params, fit: "repetir" } : null),
       });
       picker.onPick(async (f) => {
         form.create.clear();
@@ -830,6 +861,7 @@
             if (s.url) URL.revokeObjectURL(s.url);
             s.url = URL.createObjectURL(f);
             thumb.src = s.url; thumb.style.display = "";
+            crop.setSource(f, "image");
             animNote.style.display = meta.animated ? "" : "none";
             picker.info.textContent = `${f.name} · ${meta.width}×${meta.height}`;
             log("info", "ui:imagen-elegida", { nombre: f.name, tipo: f.type, bytes: f.size, ...meta });
@@ -845,7 +877,7 @@
         id: "imagen", title: "Imagen + audio",
         desc: "Una imagen fija con el sonido que elijas. El sticker dura lo que dure el tramo de audio.",
         sources: [
-          { title: "Imagen", body: [picker.el, thumb, animNote], ready: () => !!s.file },
+          { title: "Imagen", body: [picker.el, crop.el, thumb, animNote], ready: () => !!s.file },
           { title: "Audio", body: audio.els, ready: () => audio.ready },
         ],
         fmt, getBase: () => baseName(s.file), stop: () => audio.trimmer.stop(),
@@ -861,6 +893,7 @@
       vTrim.setMuted(true);
       const vWrap = h("div", { style: "display:none" }, vTrim.el);
       const gifImg = h("img", { class: "thumb", alt: "GIF elegido", style: "display:none" });
+      const crop = makeCropEditor();
       const s = { file: null, kind: null, gif: null, url: null };
       const changed = () => { updateSummary(); form.refresh(); };
       const audio = makeAudioSource(changed);
@@ -905,7 +938,7 @@
         extras: [summary, fitRow, h("div", { class: "row" }, testBtn, h("span", { class: "muted" }, "Vista previa: la animación se reproduce una vez, como en WhatsApp."))],
         getParams: () => {
           if (!s.file || !audio.ready) return null;
-          const visual = s.kind === "gif" ? { kind: "gif", file: s.file, start: 0, dur: s.gif.duration } : { kind: "video", file: s.file, start: vTrim.start, dur: vTrim.len };
+          const visual = s.kind === "gif" ? { kind: "gif", file: s.file, start: 0, dur: s.gif.duration, crop: crop.params() } : { kind: "video", file: s.file, start: vTrim.start, dur: vTrim.len, crop: crop.params() };
           return { visual, audio: audio.params, fit: fitSel.value };
         },
       });
@@ -924,12 +957,14 @@
               s.file = f; s.kind = "gif"; s.gif = g;
               s.url = URL.createObjectURL(f);
               gifImg.src = s.url; gifImg.style.display = ""; vWrap.style.display = "none";
+              crop.setSource(f, "image");
               vTrim.clear();
               picker.info.textContent = `${f.name} · ${fmtT(g.duration)} · ${g.frames} cuadros · ${g.width}×${g.height} · se usa completo`;
               log("info", "ui:gif-elegido", { nombre: f.name, tipo: f.type, bytes: f.size, cuadros: g.frames, duracion: g.duration, ancho: g.width, alto: g.height });
             } else {
               const meta = await WAAS.probeVideo(f);
               s.file = f; s.kind = "video"; s.gif = null;
+              crop.setSource(f, "video");
               vTrim.load(f, meta);
               vWrap.style.display = ""; gifImg.style.display = "none";
               picker.info.textContent = `${f.name} · ${fmtT(meta.duration)} · ${meta.width}×${meta.height}`;
@@ -951,7 +986,7 @@
         id: "mezcla", title: "Video o GIF + audio",
         desc: "Una animación (video sin su sonido, o un GIF) con el audio que elijas.",
         sources: [
-          { title: "Animación", body: [picker.el, vWrap, gifImg], ready: () => !!s.file },
+          { title: "Animación", body: [picker.el, crop.el, vWrap, gifImg], ready: () => !!s.file },
           { title: "Audio", body: audio.els, ready: () => audio.ready },
         ],
         fmt, getBase: () => baseName(s.file),
