@@ -1,0 +1,71 @@
+name: Problema
+description: Algo falla al instalar o al usar la extensión.
+title: "[Problema] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportarlo. Antes, revisa la sección [¿No te funciona?](https://github.com/Shirtep/WA-audio-stickers#no-te-funciona) del README y busca si alguien ya lo reportó en los [issues existentes](https://github.com/Shirtep/WA-audio-stickers/issues?q=is%3Aissue).
+        **No funciona en Firefox** ni en navegadores basados en él.
+        Si quien recibe el sticker ve «Recibiste un mensaje que no es compatible con tu versión de WhatsApp», tiene que actualizar WhatsApp: no es un error de la extensión.
+  - type: dropdown
+    id: etapa
+    attributes:
+      label: ¿Cuándo ocurre?
+      options:
+        - Al instalarla (página de extensiones)
+        - Al abrir el panel en WhatsApp Web
+        - Al calcular opciones o crear el sticker
+        - Al enviar el sticker
+        - El sticker llega, pero sin sonido o se ve mal
+        - Otro
+    validations:
+      required: true
+  - type: input
+    id: navegador
+    attributes:
+      label: Navegador y versión
+      description: "Por ejemplo: Chrome 142, Edge 141, Brave 1.85. La versión está en Menú → Ayuda → Información."
+    validations:
+      required: true
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Otro
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de la extensión
+      description: Aparece arriba del panel ("Versión 0.7.2"). Si no se puede abrir, la de la página de extensiones.
+    validations:
+      required: true
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: ¿Qué pasó?
+      description: Qué hiciste, qué esperabas y qué pasó en cambio. Puedes pegar capturas aquí; tapa chats y números.
+    validations:
+      required: true
+  - type: textarea
+    id: registro
+    attributes:
+      label: Registro de diagnóstico
+      description: |
+        Si el problema es al usarla: en el panel, abre **Herramientas de prueba**, pulsa **Diagnóstico**, repite lo que falló y pulsa **Guardar registro…**. Arrastra el archivo `.json` aquí (si no lo acepta, comprímelo en un ZIP).
+        El registro oculta los números de teléfono y no incluye mensajes, pero sí los nombres de tus archivos y del chat al que enviaste el sticker: ábrelo con un editor de texto y borra lo que no quieras compartir.
+  - type: checkboxes
+    id: revisado
+    attributes:
+      label: Antes de enviar
+      options:
+        - label: Revisé la sección «¿No te funciona?» del README.
+          required: true
+        - label: Uso la última versión de la extensión.
