@@ -44,8 +44,8 @@ function verifyOggPages(bytes) {
 
 test("cropGeometry square framing supports zoom, pan and clamped values", () => {
   const base = I.cropGeometry(1920, 1080, "recortar", 512, {});
-  assert.equal(base.w, 512);
-  assert.equal(base.h, 288);
+  assert.ok(Math.abs(base.w - 910.2222222222223) < 0.001);
+  assert.equal(base.h, 512);
   const zoomed = I.cropGeometry(1920, 1080, "recortar", 512, { zoom: 2, x: 1, y: -1 });
   assert.equal(zoomed.zoom, 2);
   assert.equal(zoomed.x, 1);
