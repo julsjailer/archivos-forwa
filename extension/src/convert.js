@@ -161,21 +161,28 @@
       // El elemento se adjunta al documento (casi invisible) para que Chrome componga sus cuadros.
       v.style.cssText = "position:fixed;right:0;bottom:0;width:4px;height:4px;opacity:0.01;pointer-events:none;z-index:-1";
       document.body.appendChild(v);
-      let watchdog = setTimeout(() => finish(new Error("La reproducción no entregó cuadros")), 4000);
+      let watchdog;
       const finish = (err) => {
         if (done) return;
         done = true;
         clearTimeout(watchdog);
+        if (signal) signal.removeEventListener("abort", onAbort);
         v.pause();
         v.remove();
         if (err) {
-          for (const s of new Set(slots.filter(Boolean).concat(last ? [last] : []))) s.bmpPromise.then((b) => b.close());
+          for (const s of new Set(slots.filter(Boolean).concat(last ? [last] : []))) Promise.resolve(s.bmpPromise).then((b) => b.close()).catch(() => {});
           return reject(err);
         }
         while (next < n && last) slots[next++] = last;
         if (last) last.used = true;
         resolve({ slots, presented });
       };
+      const onAbort = () => finish(new DOMException("Cancelado por el usuario", "AbortError"));
+      if (signal) {
+        if (signal.aborted) return onAbort();
+        signal.addEventListener("abort", onAbort, { once: true });
+      }
+      watchdog = setTimeout(() => finish(new Error("La reproducción no entregó cuadros")), 4000);
       const cb = (now, meta) => {
         if (done) return;
         if (signal && signal.aborted) return finish(new DOMException("Cancelado por el usuario", "AbortError"));
