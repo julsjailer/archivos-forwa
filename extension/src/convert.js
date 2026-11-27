@@ -723,6 +723,10 @@
     return page;
   }
   function buildOggOpus(packets, preSkip, totalSamples) {
+    if (!Array.isArray(packets) || packets.length === 0) throw new Error("El audio Opus no contiene paquetes");
+    if (!Number.isInteger(preSkip) || preSkip < 0 || preSkip > 0xffff) throw new Error("Pre-skip Opus fuera de rango");
+    if (!Number.isSafeInteger(totalSamples) || totalSamples <= 0) throw new Error("Duración de audio Opus inválida");
+    if (packets.some((packet) => !(packet instanceof Uint8Array) || packet.length === 0) throw new Error("Paquete Opus inválido");
     const serial = (Math.random() * 0xffffffff) >>> 0;
     const head = new Uint8Array(19);
     head.set(te.encode("OpusHead"), 0);
