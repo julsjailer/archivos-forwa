@@ -234,15 +234,21 @@
       // Resolver los bitmaps y deduplicar referencias.
       const frames = [];
       const cache = new Map();
-      for (const s of res.slots) {
-        if (!cache.has(s)) cache.set(s, { bmp: await s.bmpPromise, fp: s.fp });
-        frames.push(cache.get(s));
+      try {
+        for (const s of res.slots) {
+          if (!cache.has(s)) cache.set(s, { bmp: await s.bmpPromise, fp: s.fp });
+          frames.push(cache.get(s));
+        }
+        let unique = 0;
+        for (let i = 0; i < frames.length; i++) if (i === 0 || !sameBytes(frames[i].fp, frames[i - 1].fp)) unique++;
+        log("info", "video:cuadros", { metodo, cuadros: frames.length, distintos: unique, mostrados: res.presented, fpsCaptura: fps, ladoCaptura: side, ms: Math.round(performance.now() - t0), ancho: v.videoWidth, alto: v.videoHeight, duracionVideo: v.duration, desfase: offset });
+        if (offset > 0) log("info", "video:desfase", `El video empieza en ${offset.toFixed(3)} s; se compensó`);
+        return frames;
+      } catch (e) {
+        for (const s of res.slots) Promise.resolve(s.bmpPromise).then((b) => b.close()).catch(() => {});
+        for (const f of cache.values()) { try { f.bmp.close(); } catch (closeError) {} }
+        throw e;
       }
-      let unique = 0;
-      for (let i = 0; i < frames.length; i++) if (i === 0 || !sameBytes(frames[i].fp, frames[i - 1].fp)) unique++;
-      log("info", "video:cuadros", { metodo, cuadros: frames.length, distintos: unique, mostrados: res.presented, fpsCaptura: fps, ladoCaptura: side, ms: Math.round(performance.now() - t0), ancho: v.videoWidth, alto: v.videoHeight, duracionVideo: v.duration, desfase: offset });
-      if (offset > 0) log("info", "video:desfase", `El video empieza en ${offset.toFixed(3)} s; se compensó`);
-      return frames;
     } finally {
       URL.revokeObjectURL(v._waasUrl);
       v.removeAttribute("src");
@@ -323,8 +329,8 @@
       for (let j = 0; j < needed.length; j++) {
         checkAbort(signal);
         const { image } = await dec.decode({ frameIndex: needed[j] });
-        const s = snap(image);
-        image.close();
+        let s;
+        try { s = snap(image); } finally { image.close(); }
         byIndex.set(needed[j], { bmp: await s.bmpPromise, fp: s.fp });
         if (onProgress && (j % 5 === 0 || j === needed.length - 1)) onProgress(`Leyendo cuadros del GIF ${j + 1}/${needed.length}`, (j + 1) / needed.length);
       }
