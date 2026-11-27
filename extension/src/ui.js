@@ -806,7 +806,7 @@
         } : null),
       });
       fmt.onMode = (mode) => crop.setMode(mode);
-      crop.setMode("recortar");
+      crop.setMode("ajustar");
       picker.onPick(async (f) => {
         trimmer.stop();
         fmt.reset();
@@ -856,7 +856,7 @@
         getParams: () => (s.file && audio.ready ? { visual: { kind: "image", file: s.file, crop: crop.params() }, audio: audio.params, fit: "repetir" } : null),
       });
       fmt.onMode = (mode) => crop.setMode(mode);
-      crop.setMode("recortar");
+      crop.setMode("ajustar");
       picker.onPick(async (f) => {
         form.create.clear();
         picker.info.textContent = "Leyendo " + f.name + "…";
@@ -950,7 +950,7 @@
       });
 
       fmt.onMode = (mode) => crop.setMode(mode);
-      crop.setMode("recortar");
+      crop.setMode("ajustar");
       picker.onPick(async (f) => {
         vTrim.stop();
         fmt.reset();
