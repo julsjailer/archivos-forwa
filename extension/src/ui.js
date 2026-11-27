@@ -470,10 +470,11 @@
       const fresh = () => !!f.an && f.anKey === key();
       const choosePreset = (an, preset) => {
         const valid = an.cells.filter((x) => x.estado === "ok" || x.estado === "baja");
+        const okFirst = (a, b) => Number(b.estado === "ok") - Number(a.estado === "ok");
         if (preset === "equilibrado") return an.auto || null;
-        if (preset === "fluido") return valid.sort((a, b) => b.fps - a.fps || b.side - a.side || (a.estado === "ok" ? -1 : 1))[0] || null;
-        if (preset === "calidad") return valid.sort((a, b) => b.side - a.side || b.fps - a.fps || (a.estado === "ok" ? -1 : 1))[0] || null;
-        if (preset === "ligero") return valid.sort((a, b) => a.est - b.est || b.fps - a.fps)[0] || null;
+        if (preset === "fluido") return valid.sort((a, b) => b.fps - a.fps || b.side - a.side || okFirst(a, b))[0] || null;
+        if (preset === "calidad") return valid.sort((a, b) => b.side - a.side || b.fps - a.fps || okFirst(a, b))[0] || null;
+        if (preset === "ligero") return valid.sort((a, b) => a.est - b.est || b.fps - a.fps || okFirst(a, b))[0] || null;
         return an.auto || null;
       };
       const applyPreset = (preset) => {
