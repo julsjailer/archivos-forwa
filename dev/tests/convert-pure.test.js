@@ -51,7 +51,9 @@ test("cropGeometry square framing supports zoom, pan and clamped values", () => 
   assert.equal(zoomed.x, 1);
   assert.equal(zoomed.y, -1);
   assert.ok(zoomed.dx < base.dx);
-  assert.ok(zoomed.dy > base.dy);
+  const zoomCenter = I.cropGeometry(1920, 1080, "recortar", 512, { zoom: 2, x: 0, y: 0 });
+  const zoomDown = I.cropGeometry(1920, 1080, "recortar", 512, { zoom: 2, x: 0, y: 1 });
+  assert.ok(zoomDown.dy < zoomCenter.dy);
   const clamped = I.cropGeometry(800, 600, "ajustar", 512, { zoom: 9, x: -5, y: 3 });
   assert.equal(clamped.zoom, 4);
   assert.equal(clamped.x, -1);
