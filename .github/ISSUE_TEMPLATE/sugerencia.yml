@@ -5,7 +5,7 @@ labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
-      value: Gracias por la idea. Busca antes en los [issues existentes](https://github.com/Shirtep/WA-audio-stickers/issues?q=is%3Aissue) por si alguien ya la propuso; si es así, apóyala con un 👍 o un comentario.
+      value: Gracias por la idea. Busca antes en los [issues existentes](https://github.com/julsjailer/archivos-forwa/issues?q=is%3Aissue) por si alguien ya la propuso; si es así, apóyala con un 👍 o un comentario.
   - type: textarea
     id: idea
     attributes:
@@ -18,3 +18,5 @@ body:
     attributes:
       label: ¿Para qué te serviría?
       description: El problema o la situación que resolvería.
+    validations:
+      required: true
