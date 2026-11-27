@@ -4,7 +4,7 @@
   const WAAS = (window.WAAS = window.WAAS || {});
   if (WAAS.log) return;
 
-  WAAS.VERSION = "0.7.3";
+  WAAS.VERSION = "0.7.4";
   WAAS.sessionId = Math.random().toString(36).slice(2, 10);
   WAAS.entries = [];
   WAAS.activeRun = null; // id de la operación en curso (crear/enviar)
