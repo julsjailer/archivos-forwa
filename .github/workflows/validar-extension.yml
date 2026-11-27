@@ -28,5 +28,6 @@ jobs:
           for f in extension/background.js extension/src/*.js; do
             node --check "$f"
           done
+          node --test dev/tests/convert-pure.test.js
       - name: Comprobar sintaxis Python del generador
         run: python3 -m py_compile dev/calibracion/generar_calibracion.py
