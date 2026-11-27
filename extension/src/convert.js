@@ -222,7 +222,7 @@
   // Captura saltando cuadro por cuadro (respaldo, más lenta pero no depende de la reproducción).
   async function captureBySeeking(v, t0, dur, fps, side, mode, onProgress, signal, crop = {}) {
     const n = Math.max(1, Math.round(dur * fps));
-    const snap = makeSnapper(side, mode);
+    const snap = makeSnapper(side, mode, crop);
     const maxT = Math.max(0, v.duration - 0.001);
     const slots = [];
     try {
@@ -358,7 +358,7 @@
       want.push(k);
     }
     const needed = [...new Set(want)].sort((a, b) => a - b);
-    const snap = makeSnapper(side, mode);
+    const snap = makeSnapper(side, mode, crop);
     const byIndex = new Map();
     const dec = await openDecoder(file);
     try {
