@@ -23,9 +23,10 @@ Crear y enviar stickers de WhatsApp con audio asociado. Ninguna mejora se consid
 7. La creación ahora falla temprano con un mensaje comprensible si faltan capacidades necesarias para audio Opus y WebP.
 8. Se añadió un aviso de privacidad a la página del registro: los números largos se ocultan, pero logs pueden contener nombres de chats/archivos y datos técnicos.
 9. Se añadieron pruebas unitarias Node para funciones puras del ensamblado: timeline, EXIF WA, WebP estático/animado y estructura Ogg con CRC de páginas.
-10. Se añadió CI para validar rutas del manifiesto, sintaxis JavaScript, pruebas unitarias y compilación sintáctica del generador Python.
-11. Se incrementó la versión a 0.7.3.
-12. Se añadió un workflow para empaquetar ZIP de la extensión como artifact descargable.
+10. Se añadieron limpiezas de bitmaps cuando falla/cancela la captura por saltos, captura GIF, conversión de cuadros o análisis; evita dejar recursos de imagen retenidos.
+11. Se añadió CI para validar rutas del manifiesto, sintaxis JavaScript, pruebas unitarias y compilación sintáctica del generador Python.
+12. Se incrementó la versión a 0.7.3.
+13. Se añadió un workflow para empaquetar ZIP de la extensión como artifact descargable.
 
 ## Riesgos que requieren pruebas reales
 - Dependencia de módulos privados de WhatsApp Web (`window.require`, `importNamespace`, módulos WAWeb* y gating de sound stickers): puede romperse con actualizaciones de WhatsApp.
