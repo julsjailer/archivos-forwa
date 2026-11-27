@@ -842,6 +842,7 @@
     const captured = visual.kind === "gif"
       ? await captureAnimation(visual.file, capDur, captureFps, captureSide, mode, capProg, signal)
       : await captureFrames(visual.file, visual.start || 0, capDur, captureFps, captureSide, mode, capProg, signal);
+    try {
     const frames = fitTimeline(captured, capDur, dur, captureFps, fit);
     const sides = SIDES.filter((x) => x <= captureSide);
     const fpsList = FPS_LIST.filter((x) => x <= captureFps);
@@ -896,6 +897,10 @@
     });
     prog("Opciones listas", 1);
     return an;
+    } catch (e) {
+      for (const f of new Set(captured)) { try { f.bmp.close(); } catch (closeError) {} }
+      throw e;
+    }
   }
 
   function release(an) {
