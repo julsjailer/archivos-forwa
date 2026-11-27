@@ -112,7 +112,7 @@ test("Ogg Opus genera cabeceras, páginas y CRC verificable", () => {
   assert.equal(pageHeaders[0].flags & 0x02, 0x02, "la primera página abre el flujo");
   assert.equal(pageHeaders.at(-1).flags & 0x04, 0x04, "la última página marca EOS");
   assert.equal(pageHeaders.at(-1).granule, 48312n, "granule final = pre-skip + muestras");
-  assert.equal(String.fromCharCode(...ogg.slice(27, 35)), "OpusHead");
+  assert.equal(String.fromCharCode(...ogg.slice(28, 36)), "OpusHead");
   assert.equal(String.fromCharCode(...ogg.slice(75, 83)), "OpusTags");
   assert.equal(new DataView(ogg.buffer, ogg.byteOffset + 38, 2).getUint16(0, true), 312, "pre-skip conserva el valor indicado");
 });
