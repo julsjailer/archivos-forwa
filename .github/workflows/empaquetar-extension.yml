@@ -1,0 +1,28 @@
+name: Empaquetar extensión
+on:
+  push:
+    branches: [main]
+    paths:
+      - "extension/**"
+      - ".github/workflows/empaquetar-extension.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paquete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar y empaquetar
+        run: |
+          node -e 'const fs=require("fs");const m=JSON.parse(fs.readFileSync("extension/manifest.json"));for(const s of m.content_scripts||[])for(const p of s.js||[])if(!fs.existsSync("extension/"+p))throw Error("Script faltante "+p);if(m.background?.service_worker&&!fs.existsSync("extension/"+m.background.service_worker))throw Error("Background faltante");if(m.options_page&&!fs.existsSync("extension/"+m.options_page))throw Error("Options page faltante");console.log("Manifest OK, version "+m.version)'
+          mkdir -p dist
+          version=$(node -p "require('./extension/manifest.json').version")
+          zip -r "dist/stickers-con-sonido-$version.zip" extension
+      - name: Publicar ZIP como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: stickers-con-sonido-extension
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
