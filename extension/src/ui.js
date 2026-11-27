@@ -420,6 +420,14 @@
       const f = { mode: "ajustar", an: null, anKey: null, sel: null };
       const segAjustar = h("button", { textContent: "Ajustar (bordes transparentes)", class: "on" });
       const segRecortar = h("button", { textContent: "Recortar (llenar el cuadro)" });
+      const PRESET_KEY = "waas-preset-v1";
+      const presetSel = h("select", null,
+        h("option", { value: "equilibrado", textContent: "Equilibrado · recomendado" }),
+        h("option", { value: "fluido", textContent: "Fluido · priorizar FPS" }),
+        h("option", { value: "calidad", textContent: "Calidad · priorizar resolución" }),
+        h("option", { value: "ligero", textContent: "Ligero · menor tamaño" }),
+        h("option", { value: "personalizado", textContent: "Personalizado · elegir tabla" }));
+      presetSel.value = store.get(PRESET_KEY, "equilibrado");
       const calcBtn = h("button", { class: "act", textContent: "Calcular opciones" });
       const calcInfo = h("span", { class: "muted" });
       const staleLbl = h("div", { class: "stale", style: "display:none" }, "Algo cambió: vuelve a calcular las opciones.");
@@ -460,6 +468,25 @@
         return JSON.stringify([key(), fileId(p.audio.file), +p.audio.start.toFixed(3), +p.audio.dur.toFixed(3), p.fit, f.sel, api.options()]);
       };
       const fresh = () => !!f.an && f.anKey === key();
+      const choosePreset = (an, preset) => {
+        const valid = an.cells.filter((x) => x.estado === "ok" || x.estado === "baja");
+        if (preset === "equilibrado") return an.auto || null;
+        if (preset === "fluido") return valid.sort((a, b) => b.fps - a.fps || b.side - a.side || (a.estado === "ok" ? -1 : 1))[0] || null;
+        if (preset === "calidad") return valid.sort((a, b) => b.side - a.side || b.fps - a.fps || (a.estado === "ok" ? -1 : 1))[0] || null;
+        if (preset === "ligero") return valid.sort((a, b) => a.est - b.est || b.fps - a.fps)[0] || null;
+        return an.auto || null;
+      };
+      const applyPreset = (preset) => {
+        if (!f.an) return;
+        const chosen = choosePreset(f.an, preset);
+        f.sel = chosen ? { side: chosen.side, fps: chosen.fps } : null;
+        renderGrid();
+        api.onUpdate();
+      };
+      presetSel.addEventListener("change", () => {
+        store.set(PRESET_KEY, presetSel.value);
+        if (f.an && f.anKey === key()) applyPreset(presetSel.value);
+      });
       const CALC_HINT = "Lee el tramo una vez y estima el peso de cada combinación.";
       const reset = () => { if (f.an) WAAS.release(f.an); f.an = null; f.sel = null; gridHost.textContent = ""; selLbl.textContent = ""; calcInfo.textContent = CALC_HINT; };
       calcInfo.textContent = CALC_HINT;
@@ -482,7 +509,7 @@
             : `≈ ${fmtB(c.est)}`;
           return h("td", null, h("button", {
             class: (c ? c.estado : "fuera") + (isSel ? " sel" : ""), textContent: label, title, disabled: !can,
-            onclick: () => { f.sel = { side, fps }; renderGrid(); api.onUpdate(); },
+            onclick: () => { f.sel = { side, fps }; presetSel.value = "personalizado"; store.set(PRESET_KEY, "personalizado"); renderGrid(); api.onUpdate(); },
           }));
         })));
         gridHost.append(h("table", { class: "grid" }, thead, rows));
@@ -504,7 +531,8 @@
             onProgress: (txt, frac) => { calcInfo.textContent = txt; api.setProgress(frac); },
           }));
           f.an = an; f.anKey = k;
-          f.sel = an.auto ? { side: an.auto.side, fps: an.auto.fps } : null;
+          const chosen = choosePreset(an, presetSel.value);
+          f.sel = chosen ? { side: chosen.side, fps: chosen.fps } : null;
           calcInfo.textContent = `Listo en ${(an.ms / 1000).toFixed(1)} s. Elige una casilla (★ = recomendada).`;
           renderGrid();
         } catch (e) {
@@ -515,7 +543,7 @@
       });
 
       const body = [...extras, h("div", { class: "row" }, h("span", null, "Encuadre"), h("span", { class: "seg" }, segAjustar, segRecortar))];
-      if (grid) body.push(h("div", { class: "row" }, calcBtn, calcInfo), calcBar, staleLbl, gridHost, selLbl, legend);
+      if (grid) body.push(h("div", { class: "row" }, h("span", null, "Preset"), presetSel, calcBtn, calcInfo), calcBar, staleLbl, gridHost, selLbl, legend);
       if (advanced) body.push(advanced);
 
       const api = {
@@ -529,6 +557,7 @@
           gridHost.style.opacity = stale ? ".35" : "";
           gridHost.style.pointerEvents = stale ? "none" : "";
           calcBtn.disabled = G.busy || !has;
+          presetSel.disabled = G.busy || !grid;
           segAjustar.disabled = segRecortar.disabled = G.busy;
           segAjustar.classList.toggle("on", f.mode === "ajustar");
           segRecortar.classList.toggle("on", f.mode === "recortar");
