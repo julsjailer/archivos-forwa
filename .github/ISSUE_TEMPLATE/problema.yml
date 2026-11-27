@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Gracias por reportarlo. Antes, revisa la sección [¿No te funciona?](https://github.com/Shirtep/WA-audio-stickers#no-te-funciona) del README y busca si alguien ya lo reportó en los [issues existentes](https://github.com/Shirtep/WA-audio-stickers/issues?q=is%3Aissue).
+        Gracias por reportarlo. Antes, revisa la sección [¿No te funciona?](https://github.com/julsjailer/archivos-forwa#no-te-funciona) del README y busca si alguien ya lo reportó en los [issues existentes](https://github.com/julsjailer/archivos-forwa/issues?q=is%3Aissue).
         **No funciona en Firefox** ni en navegadores basados en él.
         Si quien recibe el sticker ve «Recibiste un mensaje que no es compatible con tu versión de WhatsApp», tiene que actualizar WhatsApp: no es un error de la extensión.
   - type: dropdown
@@ -44,7 +44,7 @@ body:
     id: version
     attributes:
       label: Versión de la extensión
-      description: Aparece arriba del panel ("Versión 0.7.2"). Si no se puede abrir, la de la página de extensiones.
+      description: Aparece arriba del panel. Si no se puede abrir, consulta la página de extensiones.
     validations:
       required: true
   - type: textarea
@@ -59,7 +59,7 @@ body:
     attributes:
       label: Registro de diagnóstico
       description: |
-        Si el problema es al usarla: en el panel, abre **Herramientas de prueba**, pulsa **Diagnóstico**, repite lo que falló y pulsa **Guardar registro…**. Arrastra el archivo `.json` aquí (si no lo acepta, comprímelo en un ZIP).
+        Si el problema es al usarla: en el panel, abre **Herramientas de prueba**, pulsa **Diagnóstico**, repite lo que falló y pulsa **Guardar registro…**. Arrastra el archivo .json aquí (si no lo acepta, comprímelo en un ZIP).
         El registro oculta los números de teléfono y no incluye mensajes, pero sí los nombres de tus archivos y del chat al que enviaste el sticker: ábrelo con un editor de texto y borra lo que no quieras compartir.
   - type: checkboxes
     id: revisado
