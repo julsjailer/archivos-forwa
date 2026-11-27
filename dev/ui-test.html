@@ -1,0 +1,15 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'; trusted-types 'none'">
+<title>Prueba de interfaz</title></head>
+<body>
+<p>Prueba de la interfaz con Trusted Types obligatorio (como WhatsApp Web), sin WhatsApp real.</p>
+<script src="../extension/src/logger.js"></script>
+<script src="../extension/src/convert.js"></script>
+<script src="../extension/src/wa.js"></script>
+<script src="../extension/src/ui.js"></script>
+<script>
+  WAAS.mountUI();
+  window.uiReady = true;
+</script>
+</body></html>

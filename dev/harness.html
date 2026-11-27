@@ -1,0 +1,81 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Prueba de conversión</title></head>
+<body>
+<p>Página de prueba de la conversión (no forma parte de la extensión cargada en Chrome).</p>
+<script src="../extension/src/logger.js"></script>
+<script src="../extension/src/convert.js"></script>
+<script>
+  async function toB64(blob) {
+    const b = new Uint8Array(await blob.arrayBuffer());
+    let s = ""; const CH = 0x8000;
+    for (let i = 0; i < b.length; i += CH) s += String.fromCharCode.apply(null, b.subarray(i, i + CH));
+    return btoa(s);
+  }
+  async function fileFrom(url, fallbackType) {
+    const blob = await (await fetch(url)).blob();
+    return new File([blob], decodeURIComponent(url.split("/").pop()), { type: blob.type || fallbackType });
+  }
+
+  // opts: start, maxDur, mode, fps, side, syncMs y, para las pestañas nuevas:
+  //   kind ("video" | "gif" | "image"), audioUrl, audioStart, audioDur, fit, still.
+  window.testConvert = async function (url, opts = {}) {
+    const kind = opts.kind || "video";
+    const file = await fileFrom(url, kind === "video" ? "video/mp4" : "image/gif");
+    let meta, visual, audio;
+    if (kind === "image") {
+      meta = await WAAS.probeImage(file);
+      visual = { kind, file };
+    } else if (kind === "gif") {
+      meta = await WAAS.probeAnimation(file);
+      visual = { kind, file, start: 0, dur: meta.duration };
+    } else {
+      meta = await WAAS.probeVideo(file);
+      const start = opts.start || 0;
+      visual = { kind, file, start, dur: Math.min(opts.maxDur || 10, meta.duration - start) };
+    }
+    if (opts.audioUrl) {
+      const af = await fileFrom(opts.audioUrl, "audio/mpeg");
+      const a = await WAAS.probeAudio(af);
+      const start = opts.audioStart || 0;
+      audio = { file: af, start, dur: Math.min(opts.audioDur || 10, a.duration - start) };
+    } else {
+      audio = { file, start: visual.start, dur: visual.dur };
+    }
+    const t0 = performance.now();
+    try {
+      const res = await WAAS.convert({ visual, audio, fit: opts.fit || "repetir", still: !!opts.still, syncMs: opts.syncMs || 0, mode: opts.mode || "ajustar", fps: opts.fps || "auto", side: opts.side || "auto" });
+      const cap = WAAS.entries.filter(e => e.event === "video:cuadros").slice(-1).map(e => e.data.metodo + "/" + e.data.fpsCaptura + "fps/" + e.data.ladoCaptura + "px/" + e.data.ms + "ms")[0];
+      return { ok: true, meta, cap, info: res.info, ms: Math.round(performance.now() - t0), webp: await toB64(res.webp), ogg: await toB64(res.ogg) };
+    } catch (e) {
+      return { ok: false, meta, error: String(e && e.stack || e), log: WAAS.entries.slice(-15) };
+    }
+  };
+
+  window.testEstimate = async function (url, opts) {
+    const blob = await (await fetch(url)).blob();
+    const file = new File([blob], decodeURIComponent(url.split("/").pop()), { type: blob.type || "video/mp4" });
+    const meta = await WAAS.probeVideo(file);
+    const duration = Math.min(opts.maxDur || 10, meta.duration);
+    const an = await WAAS.analyze({ file, start: 0, duration, mode: "ajustar" });
+    const ok = an.cells.filter(c => c.estado === "ok"), baja = an.cells.filter(c => c.estado === "baja");
+    const picks = [an.auto];
+    const best512 = ok.filter(c => c.side >= 384).sort((a, b) => b.est - a.est)[0]; if (best512) picks.push(best512);
+    const nearLimit = ok.sort((a, b) => b.est - a.est)[0]; if (nearLimit) picks.push(nearLimit);
+    if (baja.length) picks.push(baja.sort((a, b) => a.est - b.est)[0]);
+    const res = [];
+    const seen = new Set();
+    for (const c of picks) {
+      if (!c || seen.has(c.side + "x" + c.fps)) continue; seen.add(c.side + "x" + c.fps);
+      try {
+        const r = await WAAS.create(an, { side: c.side, fps: c.fps });
+        res.push({ side: c.side, fps: c.fps, estado: c.estado, est: c.est, real: r.info.webpBytes, q: r.info.calidad });
+      } catch (e) { res.push({ side: c.side, fps: c.fps, estado: c.estado, est: c.est, error: e.message }); }
+    }
+    const grid = an.cells.filter(c => c.estado !== "fuera").length;
+    const okN = an.cells.filter(c => c.estado === "ok").length;
+    WAAS.release(an);
+    return { dur: duration, ms: an.ms, cap: an.captureFps + "fps/" + an.captureSide + "px", okN, grid, res };
+  };
+  window.testCaps = () => WAAS.capabilities();
+</script>
+</body></html>
