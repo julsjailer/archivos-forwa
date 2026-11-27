@@ -141,3 +141,13 @@ test("Ogg Opus divide paquetes largos en páginas y conserva granules", () => {
   assert.equal(pages[3].flags & 0x04, 0x04, "última página marca EOS");
   assert.equal(pages[3].granule, BigInt(preSkip + totalSamples));
 });
+
+
+test("plan de cuadros conserva duración en FPS no enteros y clips cortos", () => {
+  for (const [dur, fps, captureFps, captured] of [[0.1, 24, 30, 4], [1.03, 12, 24, 25], [2.2, 15, 10, 8]]) {
+    const plan = I.plan(captured, dur, fps, captureFps);
+    assert.equal(plan.length, Math.max(1, Math.round(dur * fps)));
+    assert.equal(plan.reduce((sum, frame) => sum + frame.durationMs, 0), Math.round(dur * 1000));
+    assert.ok(plan.every(frame => frame.idx >= 0 && frame.idx < captured && frame.durationMs >= 1));
+  }
+});
