@@ -21,7 +21,7 @@ jobs:
           python3 dev/calibracion/generar_calibracion.py /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf dev/calibracion/calibracion_desfase.mp4
       - name: Guardar video en el repositorio
         run: |
-          if git diff --quiet -- dev/calibracion/calibracion_desfase.mp4; then
+          if ! git status --porcelain -- dev/calibracion/calibracion_desfase.mp4 | grep -q .; then
             echo "El video ya existe y no cambió."
             exit 0
           fi
