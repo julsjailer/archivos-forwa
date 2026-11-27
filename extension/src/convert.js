@@ -957,15 +957,37 @@
 
   // Comprobaciones del navegador para el diagnóstico.
   async function capabilities() {
-    const out = { offscreenCanvas: typeof OffscreenCanvas !== "undefined", webCodecsAudio: typeof AudioEncoder !== "undefined" };
+    const out = {
+      offscreenCanvas: typeof OffscreenCanvas !== "undefined",
+      createImageBitmap: typeof createImageBitmap === "function",
+      webCodecsAudio: typeof AudioEncoder !== "undefined" && typeof AudioData !== "undefined",
+      offlineAudioContext: typeof OfflineAudioContext !== "undefined",
+      imageDecoder: typeof ImageDecoder !== "undefined",
+      videoFrameCallback: typeof HTMLVideoElement !== "undefined" && typeof HTMLVideoElement.prototype.requestVideoFrameCallback === "function",
+      webpEncode: false,
+      opusEncode: false,
+      imageFormats: {},
+    };
     try {
+      if (!out.offscreenCanvas) throw new Error("OffscreenCanvas no disponible");
       const c = new OffscreenCanvas(4, 4);
-      c.getContext("2d").fillRect(0, 0, 2, 2);
+      const ctx = c.getContext("2d");
+      if (!ctx) throw new Error("Contexto 2D no disponible");
+      ctx.fillRect(0, 0, 2, 2);
       const b = await c.convertToBlob({ type: "image/webp", quality: 0.5 });
-      out.webpEncode = b.type;
+      out.webpEncode = b.type === "image/webp" ? true : "formato devuelto: " + b.type;
     } catch (e) { out.webpEncode = "error: " + e.message; }
     if (out.webCodecsAudio) {
-      try { out.opus = (await AudioEncoder.isConfigSupported({ codec: "opus", sampleRate: 48000, numberOfChannels: 1, bitrate: 32000 })).supported; } catch (e) { out.opus = "error: " + e.message; }
+      try {
+        const cfg = await AudioEncoder.isConfigSupported({ codec: "opus", sampleRate: SAMPLE_RATE, numberOfChannels: 1, bitrate: 32000 });
+        out.opusEncode = !!cfg.supported;
+      } catch (e) { out.opusEncode = "error: " + e.message; }
+    } else out.opusEncode = false;
+    if (out.imageDecoder) {
+      for (const type of ["image/gif", "image/webp", "image/png", "image/apng"]) {
+        try { out.imageFormats[type] = await ImageDecoder.isTypeSupported(type); }
+        catch (e) { out.imageFormats[type] = "error: " + e.message; }
+      }
     }
     return out;
   }
