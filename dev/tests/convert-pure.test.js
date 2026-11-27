@@ -42,6 +42,23 @@ function verifyOggPages(bytes) {
   return pages;
 }
 
+test("cropGeometry square framing supports zoom, pan and clamped values", () => {
+  const base = I.cropGeometry(1920, 1080, "recortar", 512, {});
+  assert.equal(base.w, 512);
+  assert.equal(base.h, 288);
+  const zoomed = I.cropGeometry(1920, 1080, "recortar", 512, { zoom: 2, x: 1, y: -1 });
+  assert.equal(zoomed.zoom, 2);
+  assert.equal(zoomed.x, 1);
+  assert.equal(zoomed.y, -1);
+  assert.ok(zoomed.dx < base.dx);
+  assert.ok(zoomed.dy > base.dy);
+  const clamped = I.cropGeometry(800, 600, "ajustar", 512, { zoom: 9, x: -5, y: 3 });
+  assert.equal(clamped.zoom, 4);
+  assert.equal(clamped.x, -1);
+  assert.equal(clamped.y, 1);
+  assert.ok(clamped.w >= 512 && clamped.h >= 512);
+});
+
 test("plan mantiene cuadros dentro del rango y duración total", () => {
   const p = I.plan(20, 2, 10, 20);
   assert.equal(p.length, 20);
