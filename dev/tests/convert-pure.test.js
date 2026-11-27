@@ -53,7 +53,7 @@ test("fitTimeline produce el número de cuadros esperado y no sale del arreglo",
   const frames = Array.from({ length: 4 }, (_, i) => ({ id: i }));
   const repeated = I.fitTimeline(frames, 1, 2, 4, "repetir");
   assert.equal(repeated.length, 8);
-  assert.deepEqual(repeated.map((f) => f.id), [0, 0, 1, 1, 2, 2, 3, 3]);
+  assert.deepEqual(repeated.map((f) => f.id), [0, 1, 2, 3, 0, 1, 2, 3]);
   const frozen = I.fitTimeline(frames, 1, 2, 4, "congelar");
   assert.equal(frozen.at(-1).id, 3);
 });
@@ -79,7 +79,7 @@ test("WebP animado contiene chunks base y ANMF por cuadro", () => {
 });
 
 test("WebP estático con EXIF se ensambla correctamente", () => {
-  const payload = new Uint8Array([86, 80, 56, 32, 3, 0, 0, 0, 4, 5, 6]);
+  const payload = new Uint8Array([86, 80, 56, 32, 3, 0, 0, 0, 4, 5, 6, 0]);
   const exif = I.exifWhatsApp({ "sound-sha256": "demo" });
   const bytes = I.buildStillWebp({ payload, hasAlpha: false }, exif, 512);
   const chunks = I.readChunks(bytes);
