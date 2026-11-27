@@ -797,6 +797,12 @@
   // Si la animación es más larga que el audio, con "repetir"/"congelar" se corta al largo del audio.
   // Una imagen fija siempre dura lo que el audio.
   async function analyze({ file, start = 0, duration, mode = "ajustar", visual, audio, fit = "repetir", onProgress, signal }) {
+    const caps = await capabilities();
+    const missing = [];
+    if (!caps.offscreenCanvas) missing.push("OffscreenCanvas");
+    if (!caps.createImageBitmap) missing.push("createImageBitmap");
+    if (caps.webpEncode !== true) missing.push("codificación WebP");
+    if (missing.length) throw new Error("Este navegador no es compatible con el análisis/captura. Faltan: " + missing.join(", ") + ". Actualiza Chrome/Edge.");
     if (!visual) visual = { kind: "video", file, start, dur: duration };
     if (!audio) audio = { file: visual.file, start: visual.start, dur: visual.dur };
     const prog = onProgress || (() => {});
@@ -892,6 +898,13 @@
 
   // Paso 2: codifica el audio y el sticker con la combinación elegida.
   async function create(an, { side, fps, syncMs = 0, still = false, audio = null, onProgress, signal, packName = "", publisher = "" }) {
+    const caps = await capabilities();
+    const missing = [];
+    if (!caps.offlineAudioContext) missing.push("OfflineAudioContext");
+    if (!caps.webCodecsAudio) missing.push("WebCodecs AudioEncoder/AudioData");
+    if (caps.opusEncode !== true) missing.push("codificación Opus");
+    if (caps.webpEncode !== true) missing.push("codificación WebP");
+    if (missing.length) throw new Error("No se puede crear el sticker con audio en este navegador. Faltan: " + missing.join(", ") + ". Usa Chrome/Edge actualizado.");
     if (!an || !an.frames) throw new Error("Primero calcula las opciones del tramo");
     syncMs = Math.max(0, Math.min(1000, Math.round(+syncMs || 0)));
     still = !!still && an.visual.kind === "image";
