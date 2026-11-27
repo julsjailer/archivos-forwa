@@ -10,6 +10,24 @@
 
   const CSS = `
   :host { all: initial; }
+  /* Visual refresh 0.7.6 — presentación únicamente */
+  .overlay { background:radial-gradient(ellipse at 50% 10%,rgba(0,168,132,.18),transparent 48%),rgba(5,13,18,.72);backdrop-filter:blur(5px);padding:12px; }
+  .panel { --accent:#00a884;--line:#dbe4e8;width:min(760px,96vw);max-height:94vh;border-radius:22px;padding:18px 20px 18px;box-shadow:0 24px 80px rgba(0,0,0,.48);background:linear-gradient(180deg,#fff,#f7fbfa); }
+  .panel.dark { background:linear-gradient(180deg,#15232a,#10191e); }
+  header { align-items:center;margin-bottom:14px;padding:2px 0 12px;border-bottom:1px solid var(--line); } header h2 { font-size:22px;letter-spacing:-.5px;font-weight:800; }
+  .brand { display:flex;align-items:center;gap:12px; } .brandmark { width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:15px;color:white;font-size:22px;background:linear-gradient(135deg,#00b894,#087f69);box-shadow:0 6px 18px rgba(0,168,132,.28); }
+  .eyebrow { color:var(--accent);font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;margin-bottom:3px; } .muted { line-height:1.45; }
+  .hdr-r .close { width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--card);transition:.15s; } .hdr-r .close:hover { background:var(--line);color:var(--fg); }
+  .tabs { display:flex;gap:7px;border:0;margin:8px 0 14px;padding:5px;border-radius:15px;background:var(--card); } .tabs button { flex:1;border:0;margin:0;border-radius:11px;padding:10px 8px;color:var(--muted);border-bottom:0;transition:background .16s,color .16s; }
+  .tabs button:hover { color:var(--fg);background:rgba(0,168,132,.08); } .tabs button.on { color:white;background:linear-gradient(135deg,#00a884,#087f69);box-shadow:0 4px 12px rgba(0,168,132,.22); }
+  section { border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin:11px 0;background:linear-gradient(145deg,var(--card),rgba(0,168,132,.035));box-shadow:0 2px 8px rgba(0,0,0,.025); } section:not(.off) { border-color:rgba(0,168,132,.35); }
+  h3 { font-size:14px;font-weight:750;margin-bottom:12px; } h3 .n { width:26px;height:26px;border-radius:9px;background:linear-gradient(135deg,#00b894,#087f69);box-shadow:0 3px 8px rgba(0,168,132,.2); }
+  .act { border-radius:12px;padding:10px 16px;background:linear-gradient(135deg,#00b894,#087f69);box-shadow:0 4px 12px rgba(0,168,132,.18);transition:transform .15s,box-shadow .15s; } .act:hover:not(:disabled) { transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,168,132,.28); }
+  .sec { border-radius:10px;padding:7px 11px;transition:border-color .15s,background .15s; } .sec:hover:not(:disabled) { border-color:var(--accent);background:rgba(0,168,132,.07); }
+  input[type=text],input[type=number],select { border-radius:9px;padding:7px 9px; } video { max-height:300px;border-radius:13px;box-shadow:0 4px 14px rgba(0,0,0,.12); } .thumb { border-radius:13px;border:1px solid var(--line); }
+  .track { border-radius:10px; } .track .sel { border-radius:7px; } .track .handle { border-radius:6px;box-shadow:0 2px 8px rgba(0,168,132,.28); } .summary { border:1px solid var(--line);border-radius:12px;padding:10px 12px; }
+  .bar { height:8px;border-radius:5px; } .bar > div { background:linear-gradient(90deg,#00b894,#35d6b1);border-radius:5px; } .result { background:var(--card);border-radius:13px;padding:12px; }
+  @media(max-width:560px) { .overlay { padding:5px;align-items:flex-start; } .panel { width:100%;max-height:96vh;border-radius:17px;padding:13px 12px 14px; } header h2 { font-size:18px; } .brandmark { width:38px;height:38px;border-radius:12px;font-size:19px; } .tabs { gap:3px;padding:4px; } .tabs button { font-size:12px;padding:9px 5px; } section { padding:12px; } .trim { grid-template-columns:1fr;gap:4px; } }
   * { box-sizing: border-box; font-family: system-ui, "Segoe UI", Roboto, sans-serif; }
   .overlay { position: fixed; inset: 0; z-index: 2147483001; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; }
   .panel { --bg:#ffffff; --fg:#111b21; --muted:#667781; --card:#f0f2f5; --line:#d1d7db; --accent:#00a884; --accent-fg:#fff;
@@ -968,7 +986,7 @@
 
     const closeBtn = h("button", { class: "close", title: "Cerrar", textContent: "×" });
     const panel = h("div", { class: "panel" },
-      h("header", null, h("div", null, h("h2", null, "Stickers con sonido"), h("div", { class: "muted" }, "Versión " + WAAS.VERSION + " · todo se procesa en tu navegador · máximo 1 MB por sticker")),
+      h("header", null, h("div", { class: "brand" }, h("div", { class: "brandmark", textContent: "♫" }), h("div", null, h("div", { class: "eyebrow" }, "CREADOR DE STICKERS"), h("h2", null, "Stickers con sonido"), h("div", { class: "muted" }, "Versión " + WAAS.VERSION + " · Procesamiento local · Máximo 1 MB"))),
         h("div", { class: "hdr-r" }, closeBtn)),
       h("nav", { class: "tabs" }, tabBtns),
       G.forms.map((f) => f.el), tools);
