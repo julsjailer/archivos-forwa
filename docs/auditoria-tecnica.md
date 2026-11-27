@@ -26,7 +26,8 @@ Crear y enviar stickers de WhatsApp con audio asociado. Ninguna mejora se consid
 10. Se añadieron limpiezas de bitmaps cuando falla/cancela la captura por saltos, captura GIF, conversión de cuadros o análisis; evita dejar recursos de imagen retenidos.
 11. Se añadió CI para validar rutas del manifiesto, sintaxis JavaScript, pruebas unitarias y compilación sintáctica del generador Python.
 12. Se incrementó la versión a 0.7.3.
-13. Se añadió un workflow para empaquetar ZIP de la extensión como artifact descargable.
+13. Se añadieron presets persistentes de conversión: Equilibrado, Fluido (prioriza FPS), Calidad (prioriza resolución), Ligero (prioriza tamaño) y Personalizado (tabla manual); todos seleccionan únicamente combinaciones estimadas dentro del límite.
+14. Se añadió un workflow para empaquetar ZIP de la extensión como artifact descargable.
 
 ## Riesgos que requieren pruebas reales
 - Dependencia de módulos privados de WhatsApp Web (`window.require`, `importNamespace`, módulos WAWeb* y gating de sound stickers): puede romperse con actualizaciones de WhatsApp.
@@ -42,7 +43,7 @@ Crear y enviar stickers de WhatsApp con audio asociado. Ninguna mejora se consid
 - No se declara todavía comprobada la función central en ejecución real. Falta la prueba end-to-end: crear sticker, revisar audio, enviar, reenviar, recibir y reproducir en otro dispositivo.
 
 ## Próximas fases
-1. Confirmar CI de la versión 0.7.3 y el ZIP de extensión.
+1. Confirmar CI de la versión 0.7.4 y el ZIP de extensión.
 2. Revisar y fortalecer manejo de memoria/cancelación sin alterar resultados.
 3. Crear matriz de pruebas manuales/end-to-end y datos de prueba repetibles.
 4. Modernizar UI y presets en cambios aislados, manteniendo la conversión/enviar intactos.
