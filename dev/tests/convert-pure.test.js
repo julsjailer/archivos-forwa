@@ -72,7 +72,7 @@ test("WebP animado contiene chunks base y ANMF por cuadro", () => {
   const webp = I.buildAnimatedWebp([{ payload, hasAlpha: false, durationMs: 100 }, { payload, hasAlpha: false, durationMs: 200 }], null, 512);
   assert.equal(String.fromCharCode(...webp.slice(0, 4)), "RIFF");
   assert.equal(String.fromCharCode(...webp.slice(8, 12)), "WEBP");
-  const chunks = I.readChunks(webp.slice(12));
+  const chunks = I.readChunks(webp);
   assert.equal(chunks[0].fourcc, "VP8X");
   assert.equal(chunks[1].fourcc, "ANIM");
   assert.equal(chunks.filter((c) => c.fourcc === "ANMF").length, 2);
@@ -82,7 +82,7 @@ test("WebP estático con EXIF se ensambla correctamente", () => {
   const payload = new Uint8Array([86, 80, 56, 32, 3, 0, 0, 0, 4, 5, 6]);
   const exif = I.exifWhatsApp({ "sound-sha256": "demo" });
   const bytes = I.buildStillWebp({ payload, hasAlpha: false }, exif, 512);
-  const chunks = I.readChunks(bytes.slice(12));
+  const chunks = I.readChunks(bytes);
   assert.equal(chunks[0].fourcc, "VP8X");
   assert.ok(chunks.some((c) => c.fourcc === "EXIF"));
 });
