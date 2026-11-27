@@ -426,17 +426,8 @@
         "MP3, M4A, OGG, WAV… o un video del que tomar el sonido.");
       const trimmer = makeTrimmer("audio", "Elige de dónde a dónde suena. Arrastra las asas o escribe los segundos.");
       const wrap = h("div", { style: "display:none" }, trimmer.el);
-      const libraryQuery = h("input", { type: "text", placeholder: "Buscar un efecto de sonido…", maxlength: 80 });
-      const librarySearch = h("button", { class: "sec", textContent: "Buscar en MyInstants" });
-      const libraryOpen = h("a", { href: "https://www.myinstants.com/es/index/us/", target: "_blank", rel: "noopener noreferrer", textContent: "Abrir MyInstants", style: "font-size:12px" });
-      const libraryStatus = h("span", { class: "muted" });
-      const libraryResults = h("div", { style: "display:grid;gap:8px;margin-top:8px" });
-      const library = h("div", { style: "border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0" },
-        h("div", { style: "font-weight:650;margin-bottom:4px" }, "Opcional: buscar sonidos en MyInstants"),
-        h("div", { class: "muted", style: "margin-bottom:8px" }, "Esta opción es adicional. Puedes seguir subiendo audios desde tu dispositivo como siempre."),
-        h("div", { class: "row" }, libraryQuery, librarySearch, libraryOpen), libraryStatus, libraryResults);
       const s = { file: null };
-      async function loadAudioFile(f, sourceLabel) {
+      picker.onPick(async (f) => {
         picker.info.textContent = "Leyendo " + f.name + "…";
         await run("audio", async () => {
           try {
@@ -445,7 +436,7 @@
             trimmer.load(f, { duration: a.duration, peaks: a.peaks, peakMax: a.peakMax });
             wrap.style.display = "";
             picker.info.textContent = `${f.name} · ${fmtT(a.duration)}${a.peakMax < 0.001 ? " · parece no tener sonido" : ""}`;
-            log("info", "ui:audio-elegido", { nombre: f.name, origen: sourceLabel || "dispositivo", tipo: f.type, bytes: f.size, duracion: a.duration, canales: a.channels, pico: +a.peakMax.toFixed(4) });
+            log("info", "ui:audio-elegido", { nombre: f.name, tipo: f.type, bytes: f.size, duracion: a.duration, canales: a.channels, pico: +a.peakMax.toFixed(4) });
           } catch (e) {
             log("error", "ui:audio-error", e);
             picker.info.textContent = "No se pudo leer: " + e.message;
@@ -455,67 +446,15 @@
           }
         });
         onChange();
-      }
-      picker.onPick((f) => loadAudioFile(f, "dispositivo"));
-      librarySearch.addEventListener("click", async () => {
-        const q = libraryQuery.value.trim();
-        if (!q) { libraryStatus.textContent = "Escribe qué sonido buscas."; return; }
-        librarySearch.disabled = true;
-        libraryStatus.textContent = "Buscando…";
-        libraryResults.textContent = "";
-        try {
-          const endpoint = "https://myinstants-api.page.gd/search?q=" + encodeURIComponent(q);
-          const response = await fetch(endpoint);
-          if (!response.ok) throw new Error("La búsqueda respondió HTTP " + response.status);
-          const data = await response.json();
-          const items = Array.isArray(data.data) ? data.data : Array.isArray(data.results) ? data.results : [];
-          if (!items.length) { libraryStatus.textContent = "No se encontraron resultados. Prueba otra búsqueda."; return; }
-          libraryStatus.textContent = `${items.length} resultado(s). Escucha y selecciona el que quieras importar.`;
-          items.slice(0, 12).forEach((item) => {
-            const title = String(item.title || item.name || "Sonido sin título");
-            const mp3 = item.mp3 || item.audio || item.sound;
-            const preview = h("audio", { controls: true, preload: "none", src: mp3 || "" });
-            const importBtn = h("button", { class: "sec", textContent: "Descargar e importar", disabled: !mp3 });
-            const row = h("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding:8px 0" },
-              h("span", { style: "flex:1;min-width:120px;font-weight:600" }, title), preview, importBtn);
-            importBtn.addEventListener("click", async () => {
-              importBtn.disabled = true;
-              libraryStatus.textContent = "Descargando sonido…";
-              try {
-                const audioResponse = await fetch(mp3);
-                if (!audioResponse.ok) throw new Error("No se pudo descargar el MP3 (HTTP " + audioResponse.status + ").");
-                const blob = await audioResponse.blob();
-                if (!blob.size || blob.size > 12 * 1024 * 1024) throw new Error("Archivo vacío o demasiado grande (máximo 12 MB).");
-                const safeName = title.replace(/[^a-z0-9-_ ]/gi, "").trim().slice(0, 48) || "sonido-myinstants";
-                const file = new File([blob], safeName + ".mp3", { type: "audio/mpeg" });
-                libraryStatus.textContent = "Sonido descargado. Importándolo al editor…";
-                await loadAudioFile(file, "MyInstants");
-                libraryStatus.textContent = "Importado. Puedes recortarlo en el editor de audio.";
-                log("info", "ui:myinstants-importado", { titulo: title, bytes: blob.size });
-              } catch (e) {
-                libraryStatus.textContent = "No se pudo importar: " + e.message + " · Puedes abrir la página de MyInstants y descargarlo manualmente.";
-                importBtn.disabled = false;
-              }
-            });
-            libraryResults.append(row);
-          });
-        } catch (e) {
-          libraryStatus.textContent = "La búsqueda directa no está disponible ahora: " + e.message + ". Usa «Abrir MyInstants»; luego descarga el audio y selecciónalo con «Elegir audio».";
-          log("warn", "ui:myinstants-busqueda-fallo", { error: String(e && e.message || e) });
-        } finally {
-          librarySearch.disabled = false;
-        }
       });
-      libraryQuery.addEventListener("keydown", (e) => { if (e.key === "Enter") librarySearch.click(); });
       trimmer.onChange(onChange);
       return {
-        els: [picker.el, library, wrap], trimmer, picker,
+        els: [picker.el, wrap], trimmer, picker,
         get ready() { return !!s.file && trimmer.loaded; },
         get params() { return s.file ? { file: s.file, start: trimmer.start, dur: trimmer.len } : null; },
         get key() { return s.file ? s.file.name + s.file.size + "|" + trimmer.key : ""; },
       };
     }
-
     // Formato: encuadre + (opcional) tabla de resolución × fps.
     // getParams() devuelve { visual, audio, fit } o null si faltan datos.
     function makeFormat({ getParams, grid = true, sync = true, still = false, extras = [] }) {
