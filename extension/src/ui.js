@@ -379,7 +379,7 @@
     // Editor de encuadre cuadrado compartido por imagen, video y GIF.
     function makeCropEditor() {
       const box = h("div", { class: "crop-editor" }), square = h("div", { class: "crop-square" });
-      let media = null, url = null, kind = "image";
+      let media = null, url = null, kind = "image", mode = "recortar";
       const state = { zoom: 1, x: 0, y: 0 };
       function slider(label, min, max, step, key, suffix) {
         const input = h("input", { type: "range", min, max, step, value: state[key] }), val = h("span", { class: "muted", textContent: key === "zoom" ? "1.0×" : "0%" });
@@ -387,7 +387,8 @@
         return { row: h("label", null, h("span", null, label), input, val), input, val };
       }
       const zoom = slider("Zoom", 1, 4, 0.1, "zoom"), horizontal = slider("Horizontal", -1, 1, 0.01, "x"), vertical = slider("Vertical", -1, 1, 0.01, "y");
-      function render() { if (media) { media.style.objectPosition = (50 + state.x * 50) + "% " + (50 + state.y * 50) + "%"; media.style.transform = "scale(" + state.zoom + ")"; } }
+      function render() { if (media) { media.style.objectPosition = (50 + state.x * 50) + "% " + (50 + state.y * 50) + "%"; media.style.objectFit = mode === "recortar" ? "cover" : "contain"; media.style.transform = "scale(" + state.zoom + ")"; } }
+      function setMode(next) { mode = next === "recortar" ? "recortar" : "ajustar"; render(); }
       function setSource(file, mediaKind = "image") {
         if (url) URL.revokeObjectURL(url);
         url = URL.createObjectURL(file); kind = mediaKind;
@@ -401,7 +402,7 @@
       square.addEventListener("pointermove", e => { if (!drag) return; state.x=Math.max(-1,Math.min(1,drag.cx-(e.clientX-drag.x)*2/square.clientWidth));state.y=Math.max(-1,Math.min(1,drag.cy-(e.clientY-drag.y)*2/square.clientHeight));horizontal.input.value=String(state.x);vertical.input.value=String(state.y);horizontal.val.textContent=Math.round(state.x*100)+"%";vertical.val.textContent=Math.round(state.y*100)+"%";render(); });
       square.addEventListener("pointerup",()=>drag=null);square.addEventListener("pointercancel",()=>drag=null);
       box.append(h("div",{class:"muted"},"Encuadre 1:1 · arrastra la imagen para moverla"),square,h("div",{class:"crop-controls"},zoom.row,horizontal.row,vertical.row),h("button",{class:"sec crop-reset",textContent:"Restablecer encuadre",onclick:reset}));
-      return { el:box,setSource,reset,params:()=>({zoom:state.zoom,x:state.x,y:state.y}) };
+      return { el:box,setSource,reset,setMode,params:()=>({zoom:state.zoom,x:state.x,y:state.y}) };
     }
 
     function makePicker(label, accept, hint) {
@@ -559,8 +560,8 @@
         selLbl.textContent = c ? `Elegido: ${c.side} px · ${c.fps} fps · ≈ ${fmtB(c.est)}${c.estado === "baja" ? " (con menos calidad)" : ""}` : "Ninguna combinación cabe en 1 MB: acorta el tramo.";
       };
 
-      segAjustar.addEventListener("click", () => { f.mode = "ajustar"; api.onUpdate(); });
-      segRecortar.addEventListener("click", () => { f.mode = "recortar"; api.onUpdate(); });
+      segAjustar.addEventListener("click", () => { f.mode = "ajustar"; api.onMode && api.onMode(f.mode); api.onUpdate(); });
+      segRecortar.addEventListener("click", () => { f.mode = "recortar"; api.onMode && api.onMode(f.mode); api.onUpdate(); });
       calcBtn.addEventListener("click", async () => {
         const p = getParams();
         if (!p) return;
@@ -590,6 +591,7 @@
 
       const api = {
         body,
+        onMode: null,
         onUpdate: () => {},
         setProgress: (frac) => { calcBar.style.display = frac > 0 ? "" : "none"; calcBarIn.style.width = Math.round(frac * 100) + "%"; },
         refresh() {
@@ -803,6 +805,8 @@
           audio: { file: s.file, start: trimmer.start, dur: trimmer.len }, fit: "repetir",
         } : null),
       });
+      fmt.onMode = (mode) => crop.setMode(mode);
+      crop.setMode("recortar");
       picker.onPick(async (f) => {
         trimmer.stop();
         fmt.reset();
@@ -851,6 +855,8 @@
         grid: false, sync: false, still: true,
         getParams: () => (s.file && audio.ready ? { visual: { kind: "image", file: s.file, crop: crop.params() }, audio: audio.params, fit: "repetir" } : null),
       });
+      fmt.onMode = (mode) => crop.setMode(mode);
+      crop.setMode("recortar");
       picker.onPick(async (f) => {
         form.create.clear();
         picker.info.textContent = "Leyendo " + f.name + "…";
@@ -877,7 +883,7 @@
         id: "imagen", title: "Imagen + audio",
         desc: "Una imagen fija con el sonido que elijas. El sticker dura lo que dure el tramo de audio.",
         sources: [
-          { title: "Imagen", body: [picker.el, crop.el, thumb, animNote], ready: () => !!s.file },
+          { title: "Imagen", body: [picker.el, crop.el, animNote], ready: () => !!s.file },
           { title: "Audio", body: audio.els, ready: () => audio.ready },
         ],
         fmt, getBase: () => baseName(s.file), stop: () => audio.trimmer.stop(),
@@ -943,6 +949,8 @@
         },
       });
 
+      fmt.onMode = (mode) => crop.setMode(mode);
+      crop.setMode("recortar");
       picker.onPick(async (f) => {
         vTrim.stop();
         fmt.reset();
@@ -986,7 +994,7 @@
         id: "mezcla", title: "Video o GIF + audio",
         desc: "Una animación (video sin su sonido, o un GIF) con el audio que elijas.",
         sources: [
-          { title: "Animación", body: [picker.el, crop.el, vWrap, gifImg], ready: () => !!s.file },
+          { title: "Animación", body: [picker.el, crop.el, vWrap], ready: () => !!s.file },
           { title: "Audio", body: audio.els, ready: () => audio.ready },
         ],
         fmt, getBase: () => baseName(s.file),
