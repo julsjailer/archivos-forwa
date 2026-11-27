@@ -21,11 +21,6 @@
   h2 { margin: 0; font-size: 19px; }
   .muted { color: var(--muted); font-size: 12px; }
   .hdr-r { display: flex; align-items: center; gap: 8px; flex: none; }
-  .kofi { display: inline-flex; align-items: center; gap: 4px; padding: 5px 13px; border-radius: 18px; background: #fff3cf; border: 1px solid #f2c14e;
-          color: #7a4b00; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; transition: background .12s, border-color .12s; }
-  .panel.dark .kofi { background: rgba(255,196,60,.12); border-color: rgba(255,196,60,.45); color: #ffcf66; }
-  .kofi:hover { background: #ffe9a8; }
-  .panel.dark .kofi:hover { background: rgba(255,196,60,.22); }
   .note { color: var(--warn); font-size: 12.5px; }
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 6px 0 4px; }
   .tabs button { border: none; background: none; color: var(--muted); padding: 8px 12px; font-size: 13.5px; font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; }
@@ -974,9 +969,7 @@
     const closeBtn = h("button", { class: "close", title: "Cerrar", textContent: "×" });
     const panel = h("div", { class: "panel" },
       h("header", null, h("div", null, h("h2", null, "Stickers con sonido"), h("div", { class: "muted" }, "Versión " + WAAS.VERSION + " · todo se procesa en tu navegador · máximo 1 MB por sticker")),
-        h("div", { class: "hdr-r" },
-          h("a", { class: "kofi", href: "https://ko-fi.com/shirtep", target: "_blank", rel: "noopener", title: "La extensión es gratis. Si te sirve, puedes apoyar el proyecto en Ko-fi.", textContent: "☕ Apoyar" }),
-          closeBtn)),
+        h("div", { class: "hdr-r" }, closeBtn)),
       h("nav", { class: "tabs" }, tabBtns),
       G.forms.map((f) => f.el), tools);
     const overlay = h("div", { class: "overlay", style: "display:none" }, panel);
