@@ -394,7 +394,7 @@
         url = URL.createObjectURL(file); kind = mediaKind;
         if (media) { media.pause?.(); media.remove(); }
         media = kind === "video" ? h("video", { muted: true, loop: true, autoplay: true, playsInline: true }) : h("img", { alt: "Vista previa del encuadre", draggable: false });
-        media.src = url; square.append(media); if (kind === "video") media.play().catch(() => {}); render();
+        media.src = url; square.append(media); reset(); if (kind === "video") media.play().catch(() => {});
       }
       function reset() { state.zoom=1;state.x=0;state.y=0;zoom.input.value="1";horizontal.input.value="0";vertical.input.value="0";zoom.val.textContent="1.0×";horizontal.val.textContent="0%";vertical.val.textContent="0%";render(); }
       let drag = null;
