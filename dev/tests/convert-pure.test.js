@@ -151,3 +151,11 @@ test("plan de cuadros conserva duración en FPS no enteros y clips cortos", () =
     assert.ok(plan.every(frame => frame.idx >= 0 && frame.idx < captured && frame.durationMs >= 1));
   }
 });
+
+
+test("buildOggOpus rechaza entradas inválidas sin generar archivos corruptos", () => {
+  assert.throws(() => I.buildOggOpus([], 312, 960), /no contiene paquetes/);
+  assert.throws(() => I.buildOggOpus([new Uint8Array()], 312, 960), /Paquete Opus inválido/);
+  assert.throws(() => I.buildOggOpus([new Uint8Array([1])], -1, 960), /Pre-skip Opus fuera de rango/);
+  assert.throws(() => I.buildOggOpus([new Uint8Array([1])], 312, 0), /Duración de audio Opus inválida/);
+});
