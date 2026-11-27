@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: archivos-forwa-main-writes
+  cancel-in-progress: false
 jobs:
   generar:
     runs-on: ubuntu-latest
@@ -29,4 +32,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add dev/calibracion/calibracion_desfase.mp4
           git commit -m "Generar video de calibración"
-          git push
+          for intento in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            echo "Push/rebase falló, reintentando ($intento/3)…"
+            sleep 2
+          done
+          exit 1
