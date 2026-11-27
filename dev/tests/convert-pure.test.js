@@ -116,3 +116,28 @@ test("Ogg Opus genera cabeceras, páginas y CRC verificable", () => {
   assert.equal(String.fromCharCode(...ogg.slice(75, 83)), "OpusTags");
   assert.equal(new DataView(ogg.buffer, ogg.byteOffset + 38, 2).getUint16(0, true), 312, "pre-skip conserva el valor indicado");
 });
+
+
+test("Ogg Opus divide paquetes largos en páginas y conserva granules", () => {
+  const packets = Array.from({ length: 55 }, (_, i) => new Uint8Array([i & 255, 7, 8]));
+  const preSkip = 312;
+  const totalSamples = packets.length * 960;
+  const ogg = I.buildOggOpus(packets, preSkip, totalSamples);
+  const pages = [];
+  let offset = 0;
+  while (offset < ogg.length) {
+    const segments = ogg[offset + 26];
+    const headerEnd = offset + 27 + segments;
+    const body = ogg.slice(offset + 27, headerEnd).reduce((sum, lace) => sum + lace, 0);
+    const end = headerEnd + body;
+    const view = new DataView(ogg.buffer, ogg.byteOffset + offset, end - offset);
+    pages.push({ flags: ogg[offset + 5], granule: view.getBigInt64(6, true), seq: view.getUint32(18, true) });
+    offset = end;
+  }
+  assert.equal(verifyOggPages(ogg), 4, "dos páginas de cabecera y dos de audio");
+  assert.deepEqual(pages.map((p) => p.seq), [0, 1, 2, 3]);
+  assert.equal(pages[2].flags & 0x04, 0, "página intermedia no marca EOS");
+  assert.equal(pages[2].granule, BigInt(preSkip + 50 * 960));
+  assert.equal(pages[3].flags & 0x04, 0x04, "última página marca EOS");
+  assert.equal(pages[3].granule, BigInt(preSkip + totalSamples));
+});
