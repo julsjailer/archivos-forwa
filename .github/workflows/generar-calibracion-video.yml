@@ -1,0 +1,32 @@
+name: Generar video de calibracion
+on:
+  push:
+    paths:
+      - ".github/workflows/generar-calibracion-video.yml"
+      - "dev/calibracion/generar_calibracion.py"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar FFmpeg y fuente
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - name: Generar MP4
+        run: |
+          python3 dev/calibracion/generar_calibracion.py /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf dev/calibracion/calibracion_desfase.mp4
+      - name: Guardar video en el repositorio
+        run: |
+          if git diff --quiet -- dev/calibracion/calibracion_desfase.mp4; then
+            echo "El video ya existe y no cambió."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dev/calibracion/calibracion_desfase.mp4
+          git commit -m "Generar video de calibración"
+          git push
