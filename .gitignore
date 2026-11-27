@@ -1,0 +1,11 @@
+# Esta carpeta también contiene datos privados (copias de WhatsApp, videos, registros de prueba).
+# Por seguridad se ignora TODO y solo se publica lo que está en esta lista.
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/LICENSE.md
+!/.github/
+!/extension/
+!/docs/
+!/dev/

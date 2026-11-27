@@ -1,0 +1,20 @@
+name: Sugerencia
+description: Una idea o mejora para la extensión.
+title: "[Sugerencia] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Gracias por la idea. Busca antes en los [issues existentes](https://github.com/Shirtep/WA-audio-stickers/issues?q=is%3Aissue) por si alguien ya la propuso; si es así, apóyala con un 👍 o un comentario.
+  - type: textarea
+    id: idea
+    attributes:
+      label: ¿Qué propones?
+      description: Describe la idea y, si aplica, cómo te imaginas usarla.
+    validations:
+      required: true
+  - type: textarea
+    id: para-que
+    attributes:
+      label: ¿Para qué te serviría?
+      description: El problema o la situación que resolvería.
