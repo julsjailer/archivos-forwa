@@ -9,6 +9,8 @@ on:
   pull_request:
     paths:
       - "extension/**"
+      - "dev/tests/**"
+      - "dev/calibracion/generar_calibracion.py"
       - ".github/workflows/validar-extension.yml"
   workflow_dispatch:
 permissions:
