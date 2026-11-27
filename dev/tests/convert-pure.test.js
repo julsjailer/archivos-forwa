@@ -91,5 +91,28 @@ test("Ogg Opus genera cabeceras, páginas y CRC verificable", () => {
   const packets = Array.from({ length: 5 }, (_, i) => new Uint8Array([i + 1, 2, 3, 4]));
   const ogg = I.buildOggOpus(packets, 312, 48000);
   assert.equal(String.fromCharCode(...ogg.slice(0, 4)), "OggS");
-  assert.ok(verifyOggPages(ogg) >= 3);
+  const pageCount = verifyOggPages(ogg);
+  assert.ok(pageCount >= 3);
+
+  // Regressions: preserve the Opus identification headers, stream sequence and EOS.
+  let offset = 0;
+  const pageHeaders = [];
+  while (offset < ogg.length) {
+    const segmentCount = ogg[offset + 26];
+    const headerEnd = offset + 27 + segmentCount;
+    const bodySize = ogg.slice(offset + 27, headerEnd).reduce((sum, lace) => sum + lace, 0);
+    const end = headerEnd + bodySize;
+    const view = new DataView(ogg.buffer, ogg.byteOffset + offset, end - offset);
+    pageHeaders.push({ flags: ogg[offset + 5], granule: view.getBigInt64(6, true), serial: view.getUint32(14, true), sequence: view.getUint32(18, true) });
+    offset = end;
+  }
+  assert.equal(pageHeaders.length, pageCount);
+  assert.deepEqual(pageHeaders.map((p) => p.sequence), pageHeaders.map((_, i) => i));
+  assert.ok(pageHeaders.every((p) => p.serial === pageHeaders[0].serial));
+  assert.equal(pageHeaders[0].flags & 0x02, 0x02, "la primera página abre el flujo");
+  assert.equal(pageHeaders.at(-1).flags & 0x04, 0x04, "la última página marca EOS");
+  assert.equal(pageHeaders.at(-1).granule, 48312n, "granule final = pre-skip + muestras");
+  assert.equal(String.fromCharCode(...ogg.slice(27, 35)), "OpusHead");
+  assert.equal(String.fromCharCode(...ogg.slice(47, 55)), "OpusTags");
+  assert.equal(new DataView(ogg.buffer, ogg.byteOffset + 37, 2).getUint16(0, true), 312, "pre-skip conserva el valor indicado");
 });
