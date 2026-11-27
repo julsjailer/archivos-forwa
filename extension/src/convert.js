@@ -189,17 +189,22 @@
     const snap = makeSnapper(side, mode);
     const maxT = Math.max(0, v.duration - 0.001);
     const slots = [];
-    for (let i = 0; i < n; i++) {
-      checkAbort(signal);
-      // Se toma el cuadro en la mitad de cada intervalo: si el salto cae justo en el borde entre
-      // dos cuadros, el navegador a veces devuelve el anterior y se pierden cuadros.
-      await seek(v, Math.min(t0 + (i + 0.5) / fps, maxT));
-      const s = snap(v);
-      s.used = true;
-      slots.push(s);
-      if (onProgress && (i % 5 === 0 || i === n - 1)) onProgress(`Leyendo cuadros ${i + 1}/${n}`, (i + 1) / n);
+    try {
+      for (let i = 0; i < n; i++) {
+        checkAbort(signal);
+        // Se toma el cuadro en la mitad de cada intervalo: si el salto cae justo en el borde entre
+        // dos cuadros, el navegador a veces devuelve el anterior y se pierden cuadros.
+        await seek(v, Math.min(t0 + (i + 0.5) / fps, maxT));
+        const s = snap(v);
+        s.used = true;
+        slots.push(s);
+        if (onProgress && (i % 5 === 0 || i === n - 1)) onProgress(`Leyendo cuadros ${i + 1}/${n}`, (i + 1) / n);
+      }
+      return { slots, presented: n };
+    } catch (e) {
+      for (const s of slots) Promise.resolve(s.bmpPromise).then((b) => b.close()).catch(() => {});
+      throw e;
     }
-    return { slots, presented: n };
   }
 
   // Por defecto se salta cuadro por cuadro: es más lento pero exacto (cada instante recibe su cuadro).
@@ -323,6 +328,9 @@
         byIndex.set(needed[j], { bmp: await s.bmpPromise, fp: s.fp });
         if (onProgress && (j % 5 === 0 || j === needed.length - 1)) onProgress(`Leyendo cuadros del GIF ${j + 1}/${needed.length}`, (j + 1) / needed.length);
       }
+    } catch (e) {
+      for (const f of byIndex.values()) { try { f.bmp.close(); } catch (closeError) {} }
+      throw e;
     } finally {
       dec.close();
     }
